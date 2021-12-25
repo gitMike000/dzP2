@@ -1,0 +1,60 @@
+diff --git a/include/Bomb.h b/include/Bomb.h
+index d122e7a..d3a0890 100644
+--- a/include/Bomb.h
++++ b/include/Bomb.h
+@@ -14,3 +14,11 @@ private:
+ 
+ };
+ 
++class BombDecorator : public Bomb
++{
++public:
++    void Move(uint16_t time) override;
++    void Draw() const override;
++
++};
++
+diff --git a/include/DynamicObject.h b/include/DynamicObject.h
+index b38e36d..a181ac7 100644
+--- a/include/DynamicObject.h
++++ b/include/DynamicObject.h
+@@ -20,4 +20,4 @@ protected:
+     double speed;
+     double xDirction, yDirection;
+ 
+-};
+\ No newline at end of file
++};
+diff --git a/src/Bomb.cpp b/src/Bomb.cpp
+index 4008eaa..cb749ea 100644
+--- a/src/Bomb.cpp
++++ b/src/Bomb.cpp
+@@ -7,3 +7,15 @@ void Bomb::Draw() const {
+   ScreenSingleton::getInstance().GotoXY(x, y);
+   std::cout << "*";
+ }
++
++void BombDecorator::Draw() const {
++//  ScreenSingleton::getInstance().GotoXY(x, y);
++//  std::cout << "*";
++  Bomb::Draw();
++  ScreenSingleton::getInstance().GotoXY(x, y-1);
++  std::cout << "|";
++}
++
++void BombDecorator::Move(uint16_t time) {
++    DynamicObject::Move(time*1.6);
++}
+diff --git a/src/SBomber.cpp b/src/SBomber.cpp
+index 2bd57d7..40a946f 100644
+--- a/src/SBomber.cpp
++++ b/src/SBomber.cpp
+@@ -298,7 +298,7 @@ void SBomber::DropBomb() {
+     double x = pPlane->GetX() + 4;
+     double y = pPlane->GetY() + 2;
+ 
+-    Bomb* pBomb = new Bomb;
++    BombDecorator* pBomb = new BombDecorator;
+     pBomb->SetDirection(0.3, 1);
+     pBomb->SetSpeed(2);
+     pBomb->SetPos(x, y);
