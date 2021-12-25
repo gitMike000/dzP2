@@ -1,0 +1,132 @@
+diff --git a/dzP2.pro.user b/dzP2.pro.user
+index 84cc951..11dbd41 100644
+--- a/dzP2.pro.user
++++ b/dzP2.pro.user
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE QtCreatorProject>
+-<!-- Written by QtCreator 6.0.0, 2021-12-23T22:17:19. -->
++<!-- Written by QtCreator 6.0.0, 2021-12-25T10:33:07. -->
+ <qtcreator>
+  <data>
+   <variable>EnvironmentId</variable>
+diff --git a/include/SBomber.h b/include/SBomber.h
+index 3ce1b9c..520fc1d 100644
+--- a/include/SBomber.h
++++ b/include/SBomber.h
+@@ -27,6 +27,50 @@ public:
+ 
+ private:
+ 
++    class AbstractCommand
++    {
++    public:
++        virtual ~AbstractCommand() {};
++        virtual void execute() =0;
++    protected:
++        AbstractCommand(SBomber* pCommand):pvoid( pCommand) {};
++        SBomber* pvoid;
++    };
++
++    class DropBombCommand: public AbstractCommand
++    {
++       public:
++        DropBombCommand(SBomber* pCommand) : AbstractCommand(pCommand) {};
++        virtual void execute() override {
++          pvoid->DropBomb();
++        };
++    };
++
++    class DeleteDynamicObjCommand: public AbstractCommand
++    {
++    private:
++        DynamicObject* p;
++    public:
++        DeleteDynamicObjCommand(SBomber* pCommand, DynamicObject* pB) : AbstractCommand(pCommand), p (pB) {};
++        virtual void execute() override {
++            pvoid->DeleteDynamicObj(p);
++        }
++    };
++
++
++    class DeleteStaticObjCommand: public AbstractCommand
++    {
++    private:
++        DestroyableGroundObject* p;
++    public:
++        DeleteStaticObjCommand(SBomber* pCommand, DestroyableGroundObject* pB) : AbstractCommand(pCommand), p (pB) {};
++        virtual void execute() override{
++            pvoid->DeleteStaticObj(p);
++        }
++    };
++
++    void CommandExecuter(AbstractCommand * pCommand);
++
+     void CheckPlaneAndLevelGUI();
+     void CheckBombsAndGround();
+     void  CheckDestoyableObjects(Bomb* pBomb);
+@@ -50,4 +94,5 @@ private:
+     uint64_t startTime, finishTime, passedTime;
+     uint16_t bombsNumber, deltaTime, fps;
+     int16_t score;
+-};
+\ No newline at end of file
++};
++
+diff --git a/src/SBomber.cpp b/src/SBomber.cpp
+index 2bd57d7..c409e64 100644
+--- a/src/SBomber.cpp
++++ b/src/SBomber.cpp
+@@ -101,6 +101,10 @@ void SBomber::CheckPlaneAndLevelGUI() {
+   }
+ }
+ 
++void SBomber::CommandExecuter(AbstractCommand *pCommand) {
++ pCommand->execute();
++}
++
+ void SBomber::CheckBombsAndGround() {
+   std::vector<Bomb*> vecBombs = FindAllBombs();
+   Ground* pGround = FindGround();
+@@ -109,7 +113,8 @@ void SBomber::CheckBombsAndGround() {
+     if (vecBombs[i]->GetY() >= y) {
+       pGround->AddCrater(vecBombs[i]->GetX());
+       CheckDestoyableObjects(vecBombs[i]);
+-      DeleteDynamicObj(vecBombs[i]);
++      //DeleteDynamicObj(vecBombs[i]);
++      CommandExecuter(new DeleteDynamicObjCommand(this,vecBombs[i]));
+     }
+   }
+ }
+@@ -124,7 +129,8 @@ void SBomber::CheckDestoyableObjects(Bomb* pBomb) {
+     const double x2 = x1 + size;
+     if (vecDestoyableObjects[i]->isInside(x1, x2)) {
+       score += vecDestoyableObjects[i]->GetScore();
+-      DeleteStaticObj(vecDestoyableObjects[i]);
++//      DeleteStaticObj(vecDestoyableObjects[i]);
++      CommandExecuter(new DeleteStaticObjCommand(this,vecDestoyableObjects[i]));
+     }
+   }
+ }
+@@ -242,11 +248,13 @@ void SBomber::ProcessKBHit() {
+       break;
+ 
+     case 'b':
+-      DropBomb();
++      //DropBomb();
++      CommandExecuter(new DropBombCommand(this));
+       break;
+ 
+     case 'B':
+-      DropBomb();
++      //DropBomb();
++      CommandExecuter(new DropBombCommand(this));
+       break;
+ 
+     default:
+@@ -308,4 +316,5 @@ void SBomber::DropBomb() {
+     bombsNumber--;
+     score -= Bomb::BombCost;
+   }
++
+ }
